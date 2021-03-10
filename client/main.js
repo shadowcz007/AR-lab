@@ -1,6 +1,9 @@
 // Modules to control application life and create native browser window
 const { app, BrowserWindow, screen } = require('electron')
 const path = require('path')
+const https = require('@small-tech/https')
+const fs = require('fs');
+
 
 
 function createWindow(width, height) {
@@ -54,3 +57,17 @@ app.whenReady().then(() => {
 app.on('window-all-closed', function() {
     if (process.platform !== 'darwin') app.quit()
 })
+
+
+const internalIp = require('internal-ip');
+const server = https.createServer((req, res) => {
+    const html = fs.readFileSync(path.join(__dirname, './mobile.html'), 'utf8');
+    res.writeHead(200, { 'Content-type': 'text/html' });
+    res.end(html);
+});
+
+const url = `https://${internalIp.v4.sync()}`;
+
+server.listen(443, () => {
+    console.log(` 🎉 Server running at ${url}`)
+});

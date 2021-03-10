@@ -10,10 +10,11 @@
     "license": "MIT",
     "repository": "",
     "dependencies": {
-
+        "@small-tech/https": "^2.1.2",
+        "internal-ip": "^6.2.0"
     },
     "devDependencies": {
-
+        "electron": "^12.0.0"
     },
     "main": "main.js",
     "scripts": {
