@@ -1,0 +1,22 @@
+{
+    "name": "demo",
+    "author": {
+        "name": "shadow",
+        "email": "389570357@qq.com"
+    },
+    "homepage": "github.com/shadowcz",
+    "version": "0.1.0",
+    "description": "demo",
+    "license": "MIT",
+    "repository": "",
+    "dependencies": {
+
+    },
+    "devDependencies": {
+
+    },
+    "main": "main.js",
+    "scripts": {
+        "start": "electron ."
+    }
+}

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <h2>HELLOOOOOOO</h2>
+    <script>
+       /* const {
+            ipcRenderer
+        } = require("electron");
+        ipcRenderer.on("new-image", (event, arg) => {
+            
+        });
+        */
+        fetch('http://0.0.0.0:8891/segment').then(res=>res.json())
+        .then(r=>{
+            n(r)
+        });
+        function n(arg){
+            let p = document.createElement('h2');
+            p.style.left = arg.left+'px';
+            p.style.top = arg.top+'px';
+            p.style.position = 'fixed';
+            p.innerText = 'HHHHHHHHHHH';
+            document.body.appendChild(p);
+        }
+    </script>
+</body>
+
+</html>

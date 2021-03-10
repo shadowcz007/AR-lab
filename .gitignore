@@ -1,5 +1,8 @@
 # OSX
 .DS_Store
 
-
+server/.ipynb_checkpoints
 server/__pycache__/*
+
+
+client/node_modules/*

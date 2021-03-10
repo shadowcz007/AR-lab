@@ -14,3 +14,8 @@
 
 ## 使用方式
 python main.py
+
+
+
+###
+hub install humanseg_server==1.2.1
