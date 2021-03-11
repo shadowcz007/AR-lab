@@ -1,14 +1,15 @@
-// Modules to control application life and create native browser window
 const { app, BrowserWindow, screen } = require('electron')
 const path = require('path')
 const https = require('@small-tech/https')
 const fs = require('fs');
+const fetch = require('node-fetch');
 
 
+let mainWindow;
 
 function createWindow(width, height) {
     // Create the browser window.
-    const mainWindow = new BrowserWindow({
+    mainWindow = new BrowserWindow({
         width: width,
         height: height,
         show: true,
@@ -19,23 +20,25 @@ function createWindow(width, height) {
         alwaysOnTop: true,
         skipTaskbar: true,
         webPreferences: {
-            webSecurity: false,
+            //开启nodejs支持
             nodeIntegration: true,
-            enableRemoteModule: true
+            //开启AI功能
+            experimentalFeatures: true,
+            //开启渲染进程调用remote
+            enableRemoteModule: true,
+            webviewTag: true,
+            devTools: true,
+            contextIsolation: false
         }
-    })
-
+    });
     // and load the index.html of the app.
     mainWindow.loadFile('index.html')
     mainWindow.setIgnoreMouseEvents(true);
     mainWindow.webContents.on("devtools-opened", () => {
-        mainWindow.setIgnoreMouseEvents(false);
+        // mainWindow.setIgnoreMouseEvents(false);
     });
 }
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
 
     let size = screen.getPrimaryDisplay().bounds;
@@ -45,29 +48,82 @@ app.whenReady().then(() => {
     createWindow(width, height)
 
     app.on('activate', function() {
-        // On macOS it's common to re-create a window in the app when the
-        // dock icon is clicked and there are no other windows open.
         if (BrowserWindow.getAllWindows().length === 0) createWindow()
     })
 })
 
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
 app.on('window-all-closed', function() {
     if (process.platform !== 'darwin') app.quit()
 })
 
 
 const internalIp = require('internal-ip');
-const server = https.createServer((req, res) => {
-    const html = fs.readFileSync(path.join(__dirname, './mobile.html'), 'utf8');
-    res.writeHead(200, { 'Content-type': 'text/html' });
-    res.end(html);
+const server = https.createServer(async(req, res) => {
+
+    if (req.url === '/') {
+        const html = fs.readFileSync(path.join(__dirname, './mobile.html'), 'utf8');
+        res.writeHead(200, { 'Content-type': 'text/html' });
+        res.end(html);
+    } else if (req.url === '/segment') {
+        console.log('segment')
+        res.writeHead(200, { 'Content-type': 'application/json' });
+        try {
+            let segment = await getBody(req);
+            res.end(JSON.stringify(segment.result));
+        } catch (error) {
+            console.log(error)
+            res.end(JSON.stringify({ base64: "" }));
+        }
+    } else if (req.url === '/project') {
+        console.log('project')
+        res.writeHead(200, { 'Content-type': 'application/json' });
+        let project = await getBody(req);
+        let { x, y } = project.result;
+        res.end(JSON.stringify({
+            x: parseFloat(x),
+            y: parseFloat(y)
+        }));
+        mainWindow.webContents.send('new-image', {
+            img: project.origin.result,
+            size: project.origin.size,
+            x: parseFloat(x),
+            y: parseFloat(y)
+        });
+    }
+
+    // else if(req.url==='/fabric.js'){
+    //     res.writeHead(200, {'Content-Type': 'application/javascript'});
+    //     res.end(fs.readFileSync(path.join(__dirname,'./node_modules/fabric-pure-browser/dist/fabric.min.js')));
+    // }
+
 });
+
+
+async function getBody(req) {
+    let body = [];
+    return new Promise((resolve, reject) => {
+        req.on('data', chunk => {
+            body.push(chunk);
+        }).on('end', () => {
+            body = JSON.parse(Buffer.concat(body).toString());
+            // console.log(JSON.stringify(body))
+            fetch('http://0.0.0.0:8891' + req.url, {
+                    method: 'post',
+                    body: JSON.stringify(body),
+                    headers: { 'Content-Type': 'application/json' },
+                })
+                .then(s => s.json())
+                .then(json => resolve({
+                    origin: body,
+                    result: json
+                }));
+        });
+    })
+}
+
 
 const url = `https://${internalIp.v4.sync()}`;
 
 server.listen(443, () => {
-    console.log(` 🎉 Server running at ${url}`)
+    console.log(` 🚀 🎉 Server running at ${url}`)
 });

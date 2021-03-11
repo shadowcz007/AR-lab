@@ -1,26 +1,46 @@
 from sanic import Sanic
 from sanic import response
 from sanic.exceptions import NotFound
+from sanic_cors import CORS
 
-import segment
 
+import segment,project
   
 app = Sanic(name=__name__)
+CORS(app)
 # camera = Camera()
 
 @app.route('/')
 def handle_request(request):
     return response.html('<p>Hello world!</p><img src="/camera-stream/">')
 
-@app.route('/segment')
+@app.route('/segment', methods=['POST'])
 async def handle_segment(request):
-    print(request)
-    # print(camera.depth_estimation)
-    return response.json({'top': 300,'left':200})
+    # print(request.json)
+    json=request.json
+    res=''
+    if json:
+        res=segment.run(json['base64'])
+    return response.json({'base64': res})
 
-@app.route('/depth_estimation')
-async def handle_depth_estimation(request):
-    return await response.file_stream(camera.depth_estimation_file)
+@app.route('/project', methods=['POST'])
+async def handle_project(request):
+    json=request.json
+    res={"x":'0.5',"y":'0.5'}
+    if json:
+        res=project.run(json['view'])
+        if res!=None:
+            res['x']=str(res['x'])
+            res['y']=str(res['y'])
+    # sanic的json dumps int有bug，需提前转为str
+    return response.json(res)
+
+
+# @app.route('/depth_estimation')
+# async def handle_depth_estimation(request):
+#     return await response.file_stream(camera.depth_estimation_file)
+
+
 
 # @app.route('/camera-stream/')
 # async def camera_stream(request):

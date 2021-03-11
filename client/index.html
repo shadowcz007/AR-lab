@@ -1,34 +1,70 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="zh">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>DEMO-by-shadow</title>
 </head>
 
 <body>
-    <h2>HELLOOOOOOO</h2>
+    <!-- <h2>HELLOOOOOOO</h2> -->
     <script>
-       /* const {
+        const {
             ipcRenderer
         } = require("electron");
         ipcRenderer.on("new-image", (event, arg) => {
-            
+            console.log(arg)
+            draw(arg);
         });
-        */
-        fetch('http://0.0.0.0:8891/segment').then(res=>res.json())
-        .then(r=>{
-            n(r)
-        });
-        function n(arg){
-            let p = document.createElement('h2');
-            p.style.left = arg.left+'px';
-            p.style.top = arg.top+'px';
-            p.style.position = 'fixed';
-            p.innerText = 'HHHHHHHHHHH';
-            document.body.appendChild(p);
+
+        // let c = document.createElement('canvas')
+        // let canvas = new fabric.Canvas(c, {
+        //     width: window.innerWidth,
+        //     height: window.innerHeight,
+        //     backgroundColor: 'transparent'
+        // });
+
+        function draw(arg) {
+            let img = new Image();
+            img.src = 'data:image/png;base64,' + arg.img;
+            img.onload = () => {
+                // console.log({
+                //     left: window.innerWidth * arg.x - img.naturalWidth * 0.5,
+                //     top: window.innerHeight * arg.y - img.naturalHeight * 0.5
+                // })
+                // let imgInstance = new fabric.Image(img, {
+                //     left: window.innerWidth * arg.x - img.naturalWidth * 0.5,
+                //     top: window.innerHeight * arg.y - img.naturalHeight * 0.5
+                // });
+                // canvas.add(img);
+                // imgInstance.selectable = true;
+
+                img.style.left = (window.innerWidth * arg.x - img.naturalWidth * 0.5) + 'px';
+                img.style.top = (window.innerHeight * arg.y - img.naturalHeight * 0.5) + 'px';
+                img.style.position = 'fixed';
+                document.body.appendChild(img);
+            }
+
         }
+
+        function postData(url, data) {
+            // Default options are marked with *
+            return fetch(url, {
+                body: JSON.stringify(data), // must match 'Content-Type' header
+                cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+                credentials: 'same-origin', // include, same-origin, *omit
+                headers: {
+                    'user-agent': 'Mozilla/4.0 MDN Example',
+                    'content-type': 'application/json'
+                },
+                method: 'POST', // *GET, POST, PUT, DELETE, etc.
+                mode: 'cors', // no-cors, cors, *same-origin
+                redirect: 'follow', // manual, *follow, error
+                referrer: 'no-referrer', // *client, no-referrer
+            })
+                .then(response => response.json()) // parses response to JSON
+        }
+
     </script>
 </body>
 

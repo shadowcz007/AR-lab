@@ -1,6 +1,9 @@
-paddlepaddle
+numpy
+opencv-python
+screenpoint
+opencv-contrib-python
 paddlehub
-visualdl
-paddleseg
-paddlenlp
-paddleocr
+paddlepaddle
+sanic
+sanic-cors
+pyautogui

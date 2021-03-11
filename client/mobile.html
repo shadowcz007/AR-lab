@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width,target-densitydpi=high-dpi,initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Document</title>
+    <style>
+        body {
+            overflow: hidden;
+            margin: 0;
+            width: 100%;
+            height: 100vh;
+        }
+
+        .main {
+            height: 100%;
+            background: #eee;
+        }
+
+        .main .controls {
+            text-align: center;
+
+        }
+
+        .main video {
+            width: 100%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 99;
+            height: 100vh;
+            background: black;
+            display: none;
+        }
+
+        .main img {
+            width: 0;
+            height: 0;
+        }
+
+        .main button {
+            width: 56px;
+            height: 56px;
+            text-align: center;
+            padding: 0;
+            font-size: 10px;
+            background: black;
+            color: white;
+            border: none;
+            outline: none;
+            border-radius: 12px;
+            user-select: none;
+        }
+
+        .main #select {
+            margin: 24px;
+            height: 32px;
+            user-select: none;
+            outline: none;
+        }
+
+        .main #detect {
+            width: 50%;
+            height: 50%;
+            display: none;
+            z-index: 99999;
+            position: fixed;
+            top: 0;
+            left: 0;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            grid-gap: 10px;
+            padding: 50% 25%;
+        }
+
+        .play {
+            background: #e9fffa40;
+        }
+
+        .main #detect div {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .main #detect div div {
+            background-color: #c5ffec69;
+            width: 12px;
+            height: 12px;
+        }
+
+        .animation {
+            animation-name: opacity;
+            animation-duration: 1s;
+            animation-iteration-count: infinite;
+        }
+
+        @keyframes opacity {
+            from {
+                background-color: #cddc39;
+            }
+
+            to {
+                background-color: #03a9f4;
+            }
+        }
+
+        #segment-result {
+            position: fixed;
+            z-index: 99999999;
+            top: 10%;
+            left: 40%;
+            display: none;
+            width: 20%;
+        }
+
+        #shot {
+            z-index: 99999999999;
+            position: fixed;
+            bottom: 24px;
+            left: calc(50% - 28px);
+        }
+    </style>
+    
+    <script>
+        /**
+ * Check pixels transparency
+ * @param {Number} tolerance - tolerance level
+ * @returns {Function}
+ */
+        const checkOpacityLevel = tolerance => (pixels) => {
+            let transparent = true;
+            for (let i = 3, l = pixels.length; i < l && transparent; i += 4) {
+                transparent = transparent && pixels[i] === 255 * tolerance;
+            }
+            return transparent;
+        };
+
+        const defaultOptions = {
+            tolerance: 0,
+        };
+
+        /**
+         * @typedef {Object} Options
+         * @prop {Number} tolerance - Level of tolerance for the transparency between 0 and 1 (0 mean no tolerance, 1 mean everything is treated as transparent)
+         */
+        /**
+         * Smartly detect edges of an image
+         * @param {HTMLCanvasElement} canvas - Tainted canvas element
+         * @param {Options} options - Some options
+         * @returns {{top: number, left: number, bottom: number, right: number}}
+         */
+        function detectEdges(canvas, options) {
+            const { tolerance } = {
+                ...defaultOptions,
+                ...options,
+            };
+
+            const isTransparent = checkOpacityLevel(tolerance);
+
+            const context = canvas.getContext("2d");
+            const { width, height } = canvas;
+            let pixels;
+
+            let top = -1;
+            do {
+                ++top;
+                pixels = context.getImageData(0, top, width, 1).data;
+            } while (isTransparent(pixels));
+
+            if (top === height) {
+                throw new Error("Can't detect edges.");
+            }
+
+            // Left
+            let left = -1;
+            do {
+                ++left;
+                pixels = context.getImageData(left, top, 1, height - top).data;
+            } while (isTransparent(pixels));
+
+            // Bottom
+            let bottom = -1;
+            do {
+                ++bottom;
+                pixels = context.getImageData(left, height - bottom - 1, width - left, 1).data;
+            } while (isTransparent(pixels));
+
+            // Right
+            let right = -1;
+            do {
+                ++right;
+                pixels = context.getImageData(width - right - 1, top, 1, height - (top + bottom)).data;
+            } while (isTransparent(pixels));
+
+            return {
+                top,
+                right,
+                bottom,
+                left,
+            };
+        };
+    </script>
+</head>
+
+<body>
+
+    <!-- <canvas id="result"></canvas> -->
+
+    <main class="main">
+        <div id="detect">
+            <div>
+                <div></div>
+            </div>
+            <div>
+                <div></div>
+            </div>
+            <div>
+                <div></div>
+            </div>
+            <div>
+                <div></div>
+            </div>
+            <div>
+                <div></div>
+            </div>
+            <div>
+                <div></div>
+            </div>
+            <div>
+                <div></div>
+            </div>
+            <div>
+                <div></div>
+            </div>
+            <div>
+                <div></div>
+            </div>
+
+        </div>
+        <div class="controls">
+            <button id="button">Camera</button>
+            <select id="select"></select>
+
+        </div>
+
+        <video id="video" autoplay playsinline></video>
+        <canvas id="segment-result" width="180" height="320"></canvas>
+        <img id="img" src="" />
+        <button id="shot">GET</button>
+    </main>
+
+    <script>
+
+        //navigator.mediaDevices.getUserMedia在ios上只支持11版本以上
+        if (navigator.mediaDevices === undefined) {
+            navigator.mediaDevices = {};
+        }
+        if (navigator.mediaDevices.getUserMedia === undefined) {
+            navigator.mediaDevices.getUserMedia = function (constraints) {
+                var getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia || navigator.oGetUserMedia;
+                if (!getUserMedia) {
+                    return Promise.reject(new Error('getUserMedia is not implemented in this browser'));
+                }
+                return new Promise(function (resolve, reject) {
+                    getUserMedia.call(navigator, constraints, resolve, reject);
+                });
+            }
+        }
+
+
+        const video = document.querySelector(".main #video");
+        const button = document.querySelector(".main #button");
+        const select = document.querySelector(".main #select");
+        const canvas = document.createElement('canvas');
+        const result = document.getElementById('segment-result');
+        const img = document.querySelector(".main #img");
+        const detect = document.querySelector(".main #detect");
+        const shot = document.getElementById('shot');
+
+        let currentStream;
+
+        button.addEventListener("click", (event) => {
+            if (typeof currentStream !== "undefined") {
+                stopMediaTracks(currentStream);
+            }
+            const videoConstraints = {};
+
+            videoConstraints.width = window.innerHeight;
+            videoConstraints.height = window.innerWidth;
+            video.style.display = 'flex';
+            detect.style.display = 'grid';
+
+            //console.log(select.value)
+            if (!select.value) {
+                videoConstraints.facingMode = "environment";
+            } else {
+                videoConstraints.deviceId = {
+                    exact: select.value
+                };
+            }
+            const constraints = {
+                video: videoConstraints,
+                audio: false,
+            };
+            navigator.mediaDevices
+                .getUserMedia(constraints)
+                .then((stream) => {
+                    currentStream = stream;
+                    video.srcObject = stream;
+
+                    video.oncanplay = () => {
+                        video.height = video.videoHeight;
+                        video.width = video.videoWidth;
+                        video.oncanplay = null;
+
+                        result.style.display = 'block';
+                        result.width = video.videoWidth;
+                        result.height = video.videoHeight;
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+
+                        // window._t = setInterval(startDetect, 10000);
+                    };
+
+                    return navigator.mediaDevices.enumerateDevices();
+                })
+                .then(gotDevices)
+                .catch((error) => {
+                    console.error(error);
+                });
+        });
+
+        shot.addEventListener("click", startDetect);
+        result.addEventListener("click",project);
+
+        async function startDetect() {
+            let ds = document.querySelectorAll('.main #detect div div');
+            Array.from(ds, d => d.classList.add('animation'));
+            await _detect();
+            stopDetect();
+            // await project();
+        }
+
+        function stopDetect() {
+            let ds = document.querySelectorAll('.main #detect div div');
+            Array.from(ds, d => d.classList.remove('animation'));
+        }
+
+        async function project() {
+            let ds = document.querySelectorAll('.main #detect div div');
+            Array.from(ds, d => d.classList.add('animation'));
+
+            canvas.getContext("2d").globalCompositeOperation = "source-over";
+            canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
+            let base64 = canvas.toDataURL().replace(/^data:image\/\w+;base64,/, "");
+
+            let resultBase64 = result.toDataURL().replace(/^data:image\/\w+;base64,/, "");
+            await postData('/project', {
+                view:base64,
+                result:resultBase64,
+                size:JSON.parse(result.getAttribute('size'))
+            });
+            stopDetect();
+            result.getContext("2d").clearRect(0,0,result.width,result.height);
+            shot.style.display='block';
+            detect.classList.remove('play');
+        }
+
+        function stopMediaTracks(stream) {
+            stream.getTracks().forEach((track) => {
+                track.stop();
+            });
+        }
+
+        function gotDevices(mediaDevices) {
+            select.innerHTML = "";
+            //select.appendChild(document.createElement("option"));
+            let count = 1;
+            // postData('/test', mediaDevices)
+
+            mediaDevices.forEach((mediaDevice) => {
+                if (mediaDevice.kind === "videoinput") {
+                    const option = document.createElement("option");
+                    option.value = mediaDevice.deviceId;
+                    const label = mediaDevice.label || `Camera ${count++}`;
+                    const textNode = document.createTextNode(label);
+                    option.appendChild(textNode);
+                    select.appendChild(option);
+                }
+            });
+        }
+
+        async function _detect() {
+            shot.style.display = "none";
+            detect.classList.add('play');
+
+            // let c = document.createElement("canvas");
+            canvas.getContext("2d").globalCompositeOperation = "source-over";
+            canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
+            let base64 = canvas.toDataURL();
+            base64 = base64.replace(/^data:image\/\w+;base64,/, "");
+
+            return new Promise((resolve, reject) => {
+                postData('/segment', {
+                    base64
+                }).then(res => {
+                    let mask = res.base64;
+                    let img = new Image();
+                    img.src = 'data:image/png;base64,' + mask;
+                    img.onload = () => {
+                        canvas.getContext("2d").globalCompositeOperation = "destination-in";
+                        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                        const { top, left, right, bottom } = detectEdges(canvas);
+                        // 裁切
+                        let w = canvas.width - left - right,
+                            h = canvas.height - top - bottom;
+                        result.width = w;
+                        result.height = h;
+
+                        result.getContext("2d").clearRect(0, 0, w, h);
+                        result.getContext("2d").drawImage(canvas, left, top, w, h, 0, 0, w, h);
+                        
+                        let width= parseInt(window.innerWidth * 0.5),
+                            height=parseInt(window.innerWidth * 0.5 * h / w),
+                            x=parseInt(0.25 * window.innerWidth),
+                            y=parseInt((window.innerHeight-height)/2);
+                        result.style.width = width + 'px';
+                        result.style.height = height + 'px';
+                        result.style.left = x+ 'px';
+                        result.style.top = y+'px';
+                        result.setAttribute('size',JSON.stringify({
+                            w,h
+                        }));
+                        resolve({
+                            w,h
+                        })
+                    }
+                });
+            })
+
+
+        }
+
+        navigator.mediaDevices.enumerateDevices().then(gotDevices);
+
+
+
+        function postData(url, data) {
+            // Default options are marked with *
+            return fetch(url, {
+                body: JSON.stringify(data), // must match 'Content-Type' header
+                cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+                credentials: 'same-origin', // include, same-origin, *omit
+                headers: {
+                    'user-agent': 'Mozilla/4.0 MDN Example',
+                    'content-type': 'application/json'
+                },
+                method: 'POST', // *GET, POST, PUT, DELETE, etc.
+                mode: 'cors', // no-cors, cors, *same-origin
+                redirect: 'follow', // manual, *follow, error
+                referrer: 'no-referrer', // *client, no-referrer
+            })
+                .then(response => response.json()) // parses response to JSON
+        }
+
+
+        /* const ws = new WebSocket('wss://' + window.location.hostname + ':443');
+        ws.onmessage = (ms) => {
+            console.log(ms)
+        }; */
+
+    </script>
+
+
+</body>
+
+</html>

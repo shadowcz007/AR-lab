@@ -1,17 +1,18 @@
 {
-    "name": "demo",
+    "name": "arlab",
     "author": {
         "name": "shadow",
         "email": "389570357@qq.com"
     },
-    "homepage": "github.com/shadowcz",
+    "homepage": "https://github.com/shadowcz007/AR-lab",
     "version": "0.1.0",
-    "description": "demo",
+    "description": "AR lab",
     "license": "MIT",
     "repository": "",
     "dependencies": {
         "@small-tech/https": "^2.1.2",
-        "internal-ip": "^6.2.0"
+        "internal-ip": "^6.2.0",
+        "node-fetch": "^2.6.1"
     },
     "devDependencies": {
         "electron": "^12.0.0"
