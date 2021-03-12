@@ -25,6 +25,14 @@ npm i
 npm start
 ```
 
+** 由于新增了自动化库robotjs，需要运行下以下：
+```
+npm i robotjs
+npm i -D electron-rebuild
+npm install -g node-gyp
+npx electron-rebuild -f -t prod,optional,dev -w robotjs
+```
+
 4 首次运行在终端中输入本机密码，生成https证书。
 
 手机跟电脑需在同一个局域网里，手机打开网站
@@ -41,8 +49,11 @@ npm start
 
 ### 感谢
 
-百度人像分割模型,详见百度飞桨官方
+[百度飞桨官方](https://www.paddlepaddle.org.cn)
 ```
+#人脸检测
+hub install pyramidbox_lite_server_mask==1.3.1
+#人像分割模型
 hub install humanseg_server==1.2.1
 ```
 

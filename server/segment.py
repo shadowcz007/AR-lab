@@ -2,11 +2,21 @@ import paddlehub as hub
 import cv2
 import utils
 
+mask_detector = hub.Module(name="pyramidbox_lite_server_mask")
 human_seg = hub.Module(name='humanseg_server')
 
+
+#人脸数量
+def face_count(b64str):
+    im = utils.base64_to_cv2(b64str)
+    cv2.imwrite('face_detection.png',im)
+    result = mask_detector.face_detection(images=[im])
+    return len(result[0]['data'])
+
+#人像分割
 def run(b64str):
     im = utils.base64_to_cv2(b64str)
-    cv2.imwrite('photo.png',im)
+    cv2.imwrite('human_seg.png',im)
     res = human_seg.segment(images=[im],visualization=False)
     img = utils.gray2rgb(res[0]['data'])
     

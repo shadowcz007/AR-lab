@@ -14,7 +14,7 @@ def cv2_to_base64(image):
 
 def base64_to_cv2(b64str):
     data = base64.b64decode(b64str.encode('utf8'))
-    data = np.fromstring(data, np.uint8)
+    data = np.frombuffer(data, np.uint8)
     data = cv2.imdecode(data, cv2.IMREAD_COLOR)
     return data
 
@@ -28,3 +28,4 @@ def screenshot():
     im= pyautogui.screenshot()
     img = cv2.cvtColor(np.asarray(im),cv2.COLOR_RGB2BGR)
     return img
+

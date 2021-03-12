@@ -17,6 +17,10 @@
             draw(arg);
         });
 
+        ipcRenderer.on("clear-all",(event,arg)=>{
+            document.body.innerHTML="";
+        })
+
         // let c = document.createElement('canvas')
         // let canvas = new fabric.Canvas(c, {
         //     width: window.innerWidth,

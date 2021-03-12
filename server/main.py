@@ -10,9 +10,20 @@ app = Sanic(name=__name__)
 CORS(app)
 # camera = Camera()
 
-@app.route('/')
-def handle_request(request):
-    return response.html('<p>Hello world!</p><img src="/camera-stream/">')
+# @app.route('/')
+# def handle_request(request):
+#     return response.html('<p>Hello world!</p><img src="/camera-stream/">')
+
+
+@app.route('/face', methods=['POST'])
+async def handle_face_count(request):
+    # print(request.json)
+    json=request.json
+    res=0
+    if json:
+        res=segment.face_count(json['base64'])
+    return response.json({'count': res})
+
 
 @app.route('/segment', methods=['POST'])
 async def handle_segment(request):
@@ -27,11 +38,12 @@ async def handle_segment(request):
 async def handle_project(request):
     json=request.json
     res={"x":'0.5',"y":'0.5'}
-    if json:
+    try:
         res=project.run(json['view'])
-        if res!=None:
-            res['x']=str(res['x'])
-            res['y']=str(res['y'])
+        res['x']=str(res['x'])
+        res['y']=str(res['y'])
+    except:
+        print("-")
     # sanic的json dumps int有bug，需提前转为str
     return response.json(res)
 
@@ -58,4 +70,5 @@ if __name__ == '__main__':
         NotFound,
         lambda r, e: response.empty(status=404)
     )
-    app.run(host='0.0.0.0', port=8891)
+    app.run(host='0.0.0.0', port=8891,workers=1)
+    #workers须==1，不然无法运行，原因待查，可能是飞浆hub不支持

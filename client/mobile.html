@@ -91,23 +91,58 @@
             background-color: #c5ffec69;
             width: 12px;
             height: 12px;
+            border-radius: 100%;
         }
 
-        .animation {
+        .animation-opacity {
             animation-name: opacity;
             animation-duration: 1s;
             animation-iteration-count: infinite;
         }
+        .animation-border {
+            animation-name: border;
+            animation-duration: 1s;
+            animation-iteration-count: infinite;
+        }
+        .animation-filter {
+            animation-name: filter;
+            animation-duration: 1s;
+            animation-iteration-count: infinite;
+        }
+        
 
         @keyframes opacity {
-            from {
+            20% {
                 background-color: #cddc39;
             }
 
-            to {
+            60%{
+                background-color: #00e2ff;
+            }
+
+            100% {
                 background-color: #03a9f4;
             }
         }
+
+        @keyframes border{
+            from{
+                border: 4px solid #00e2ff;
+            }
+            to{
+                border: 4px solid #ffee00;
+            }
+        }
+
+        @keyframes filter{
+            from{
+                filter:contrast(0.9)
+            }
+            to{
+                filter:contrast(1) drop-shadow(2px 4px 4px #00e2ff)
+            }
+        }
+        
 
         #segment-result {
             position: fixed;
@@ -116,6 +151,7 @@
             left: 40%;
             display: none;
             width: 20%;
+            /* filter: opacity(0.8) drop-shadow(2px 4px 4px black); */
         }
 
         #shot {
@@ -245,11 +281,11 @@
         <div class="controls">
             <button id="button">Camera</button>
             <select id="select"></select>
-
+            <button id="clear">CLEAR</button>
         </div>
 
         <video id="video" autoplay playsinline></video>
-        <canvas id="segment-result" width="180" height="320"></canvas>
+        <canvas id="segment-result" width="180" height="320" class='animation-filter'></canvas>
         <img id="img" src="" />
         <button id="shot">GET</button>
     </main>
@@ -324,7 +360,7 @@
                         canvas.width = video.videoWidth;
                         canvas.height = video.videoHeight;
 
-                        // window._t = setInterval(startDetect, 10000);
+                        //window._t = setInterval(_detect, 5000);
                     };
 
                     return navigator.mediaDevices.enumerateDevices();
@@ -337,27 +373,31 @@
 
         shot.addEventListener("click", startDetect);
         result.addEventListener("click",project);
+        document.getElementById('clear').addEventListener('click',clearAll);
 
         async function startDetect() {
+
+            //if(window._t) window.clearInterval(window._t);
+
             let ds = document.querySelectorAll('.main #detect div div');
-            Array.from(ds, d => d.classList.add('animation'));
-            await _detect();
+            Array.from(ds, d => d.classList.add('animation-opacity'));
+            await segment();
             stopDetect();
             // await project();
         }
 
         function stopDetect() {
             let ds = document.querySelectorAll('.main #detect div div');
-            Array.from(ds, d => d.classList.remove('animation'));
+            Array.from(ds, d => d.classList.remove('animation-opacity'));
         }
 
         async function project() {
             let ds = document.querySelectorAll('.main #detect div div');
-            Array.from(ds, d => d.classList.add('animation'));
+            Array.from(ds, d => d.classList.add('animation-opacity'));
 
             canvas.getContext("2d").globalCompositeOperation = "source-over";
             canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
-            let base64 = canvas.toDataURL().replace(/^data:image\/\w+;base64,/, "");
+            let base64 = canvas.toDataURL("image/jpeg",0.5).replace(/^data:image\/\w+;base64,/, "");
 
             let resultBase64 = result.toDataURL().replace(/^data:image\/\w+;base64,/, "");
             await postData('/project', {
@@ -369,6 +409,7 @@
             result.getContext("2d").clearRect(0,0,result.width,result.height);
             shot.style.display='block';
             detect.classList.remove('play');
+            //window._t = setInterval(_detect, 5000);
         }
 
         function stopMediaTracks(stream) {
@@ -395,14 +436,39 @@
             });
         }
 
+        function clearAll(){
+            postData('/clear');
+        }
+
         async function _detect() {
+            let c =document.createElement('canvas');
+            let ctx=c.getContext('2d');
+            c.width=canvas.width;
+            c.height=canvas.height;
+            ctx.globalCompositeOperation = "source-over";
+            ctx.drawImage(video, 0, 0, c.width, c.height);
+            let base64 = c.toDataURL("image/jpeg",0.75);
+            base64 = base64.replace(/^data:image\/\w+;base64,/, "");
+            postData('/face', {
+                    base64
+                }).then(res => {
+                    let count=res.count;
+                    if(count===1){
+                        shot.classList.add('animation-border')
+                    }else{
+                        shot.classList.remove('animation-border')
+                    }
+                });
+        }
+
+        async function segment() {
             shot.style.display = "none";
             detect.classList.add('play');
 
             // let c = document.createElement("canvas");
             canvas.getContext("2d").globalCompositeOperation = "source-over";
             canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
-            let base64 = canvas.toDataURL();
+            let base64 = canvas.toDataURL("image/jpeg",0.9);
             base64 = base64.replace(/^data:image\/\w+;base64,/, "");
 
             return new Promise((resolve, reject) => {
@@ -443,8 +509,6 @@
                     }
                 });
             })
-
-
         }
 
         navigator.mediaDevices.enumerateDevices().then(gotDevices);
