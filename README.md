@@ -1,6 +1,8 @@
 # 参赛作品名
 [【隔空取人】【AI创造营】【mixlab】](https://mp.weixin.qq.com/s/UvYNdSBOmSSuCouWZ4MvwQ)
 
+![粘贴到桌面](demo/01.gif "01.gif")
+![粘贴到微信](demo/02.gif "02.gif")
 
 ### 作品简介
 
